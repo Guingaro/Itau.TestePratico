@@ -53,11 +53,13 @@ namespace Itau.TestePratico.Api.Controllers
         }
 
         [HttpPost("Remover")]
-        public async Task<IActionResult> Remover(Guid Id)
+        public async Task<IActionResult> Remover(Guid EntityId)
         {
             try
             {
-                await _repositorioFeriado.Remover(Id);
+                if (EntityId == null) throw new Exception("Id da Entidade é obrigatorio");
+
+                await _repositorioFeriado.Remover(EntityId);
                 return Ok("Feriado removido com sucesso.");
             }
             catch (Exception ex)
