@@ -24,15 +24,17 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
             => await _dbSet.FindSync(m => true, new FindOptions<Feriado, Feriado>() { Sort = SortDefinition() }).ToListAsync();
 
         public async Task<List<Feriado>> ObterPorMesAno(string Mes, string Ano)
-            => await _dbSet.FindSync(Builders<Feriado>.Filter.Regex("Data", new BsonRegularExpression($".*{Mes}/{Ano}.*"))).ToListAsync(); 
-       
+            => await _dbSet.FindSync(Builders<Feriado>.Filter.Regex("Data", new BsonRegularExpression($".*{Mes}/{Ano}.*"))).ToListAsync();
+
         public override async Task Atualizar(Guid Id, Feriado entity)
         {
-            var feriado = await _dbSet.FindSync(Filter.Eq("Data", entity.Data)).FirstOrDefaultAsync();
+            var feriado = await _dbSet.FindSync(Filter.Eq("_id", Id)).FirstOrDefaultAsync();
 
-            if (feriado != null && !(feriado.Data == entity.Data)) throw new Exception(string.Format("{0},{1}", "Já existe feriado para data informada.", $"Feriado : {feriado.ToJson()}"));
+            if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
 
             if (entity.Data != null && !rxDate.IsMatch(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
+
+            if (await VerificaDuplicidadeData(entity.Data)) throw new Exception("Já existe feriado para data informada.");
 
             entity.Id = Id;
 
@@ -60,6 +62,8 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 
             if (string.IsNullOrEmpty(data) && !rxDate.IsMatch(data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
 
+            if (await VerificaDuplicidadeData(data)) throw new Exception("Já existe feriado para data informada.");
+
             await base.Atualizar(Id, new Feriado
             {
                 Id = Id,
@@ -84,15 +88,12 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
         }
         public override async Task Criar(Feriado entity)
         {
-            var feriado = await _dbSet.FindSync(Filter.Eq("Data", entity.Data)).FirstOrDefaultAsync();
-
-            if (feriado != null) throw new Exception(string.Format("{0},{1}", "Já existe feriado para data informada.", $"Feriado : {feriado.ToJson()}"));
+            if (await VerificaDuplicidadeData(entity.Data)) throw new Exception("Já existe feriado para data informada.");
 
             if (entity.Data != null && !rxDate.IsMatch(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
 
             await base.Criar(entity);
         }
-
         public override async Task Remover(Guid Id)
         {
             var feriado = await _dbSet.FindSync(Filter.Eq("_id", Id)).FirstOrDefaultAsync();
@@ -101,7 +102,8 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 
             await base.Remover(Id);
         }
-
+        async Task<bool> VerificaDuplicidadeData(string data)
+                => await _dbSet.FindSync(Filter.Eq("Data", data)).AnyAsync();
         private SortDefinition<Feriado> SortDefinition() => Builders<Feriado>.Sort.Descending(x => x.Data);
     }
 }
