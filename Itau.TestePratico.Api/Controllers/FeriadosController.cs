@@ -1,6 +1,7 @@
 ﻿using Itau.TestePratico.Dominio.IRepositorio;
 using Itau.TestePratico.Dominio.Modelo;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
 using System.Threading.Tasks;
 
@@ -37,13 +38,11 @@ namespace Itau.TestePratico.Api.Controllers
         }
 
         [HttpPost("Atualizar")]
-        public async Task<IActionResult> Atualizar(Guid? EntityId, Feriado feriado)
+        public async Task<IActionResult> Atualizar([BindRequired, FromQuery] Guid EntityId, Feriado feriado)
         {
             try
             {
-                if (EntityId == null) throw new Exception("Id da Entidade é obrigatorio");
-
-                await _repositorioFeriado.Atualizar(EntityId.Value, feriado);
+                await _repositorioFeriado.Atualizar(EntityId, feriado);
                 return Ok("Feriado atualizado com sucesso.");
             }
             catch (Exception ex)
@@ -53,12 +52,10 @@ namespace Itau.TestePratico.Api.Controllers
         }
 
         [HttpPost("Remover")]
-        public async Task<IActionResult> Remover(Guid EntityId)
+        public async Task<IActionResult> Remover([BindRequired, FromQuery] Guid EntityId)
         {
             try
             {
-                if (EntityId == null) throw new Exception("Id da Entidade é obrigatorio");
-
                 await _repositorioFeriado.Remover(EntityId);
                 return Ok("Feriado removido com sucesso.");
             }
