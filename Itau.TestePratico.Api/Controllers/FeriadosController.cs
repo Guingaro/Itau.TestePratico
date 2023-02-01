@@ -1,4 +1,6 @@
-﻿using Itau.TestePratico.Dominio.IRepositorio;
+﻿using Itau.TestePratico.Api.Dto;
+using Itau.TestePratico.Dominio.Enum;
+using Itau.TestePratico.Dominio.IRepositorio;
 using Itau.TestePratico.Dominio.Modelo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -21,28 +23,52 @@ namespace Itau.TestePratico.Api.Controllers
 
         [HttpGet("ObterPor")]
         public async Task<JsonResult> ObterPor(string Mes, string Ano) => new JsonResult(await _repositorioFeriado.ObterPorMesAno(Mes, Ano));
-        
 
         [HttpPost("Criar")]
-        public async Task<IActionResult> Criar(Feriado feriado)
+        public async Task<IActionResult> Criar(FeriadoDto feriado)
         {
             try
             {
-                await _repositorioFeriado.Criar(feriado);
-                return Ok("Feriado inserido com sucesso.");
+                await _repositorioFeriado.Criar(new Feriado { Nome = feriado.Nome,  Data = feriado.Data, Tipo = feriado.Tipo });
+                return Created("Feriado inserido com sucesso.", feriado);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
-
-        [HttpPost("Atualizar")]
-        public async Task<IActionResult> Atualizar([BindRequired, FromQuery] Guid EntityId, Feriado feriado)
+        [HttpPut("Atualizar")]
+        public async Task<IActionResult> Atualizar([BindRequired, FromQuery] Guid EntityId, FeriadoDto feriado)
         {
             try
             {
-                await _repositorioFeriado.Atualizar(EntityId, feriado);
+                await _repositorioFeriado.Atualizar(EntityId, new Feriado { Nome = feriado.Nome, Data = feriado.Data, Tipo = feriado.Tipo });
+                return Ok("Feriado atualizado com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPatch("AtualizarNome")]
+        public async Task<IActionResult> AtualizarNome([BindRequired, FromQuery] Guid EntityId, [BindRequired, FromQuery] string nome)
+        {
+            try
+            {
+                await _repositorioFeriado.AtualizarNome(EntityId, nome);
+                return Ok("Feriado atualizado com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPatch("AtualizarData")]
+        public async Task<IActionResult> AtualizarData([BindRequired, FromQuery] Guid EntityId, [BindRequired, FromQuery] string data)
+        {
+            try
+            {
+                await _repositorioFeriado.AtualizarData(EntityId, data);
                 return Ok("Feriado atualizado com sucesso.");
             }
             catch (Exception ex)
@@ -51,7 +77,21 @@ namespace Itau.TestePratico.Api.Controllers
             }
         }
 
-        [HttpPost("Remover")]
+        [HttpPatch("AtualizarTipo")]
+        public async Task<IActionResult> Atualizar([BindRequired, FromQuery] Guid EntityId, [BindRequired, FromQuery] TipoFeriado tipoFeriado)
+        {
+            try
+            {
+                await _repositorioFeriado.AtualizarTipo(EntityId, tipoFeriado);
+                return Ok("Feriado atualizado com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("Remover")]
         public async Task<IActionResult> Remover([BindRequired, FromQuery] Guid EntityId)
         {
             try

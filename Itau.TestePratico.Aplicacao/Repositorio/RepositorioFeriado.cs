@@ -1,5 +1,6 @@
 ﻿using Itau.TestePratico.Aplicacao.Context;
 using Itau.TestePratico.Aplicacao.Context.Base;
+using Itau.TestePratico.Dominio.Enum;
 using Itau.TestePratico.Dominio.IRepositorio;
 using Itau.TestePratico.Dominio.Modelo;
 using MongoDB.Bson;
@@ -25,7 +26,6 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
         public async Task<List<Feriado>> ObterPorMesAno(string Mes, string Ano)
             => await _dbSet.FindSync(Builders<Feriado>.Filter.Regex("Data", new BsonRegularExpression($".*{Mes}/{Ano}.*"))).ToListAsync(); 
        
-
         public override async Task Atualizar(Guid Id, Feriado entity)
         {
             var feriado = await _dbSet.FindSync(Filter.Eq("Data", entity.Data)).FirstOrDefaultAsync();
@@ -38,7 +38,50 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 
             await base.Atualizar(Id, entity);
         }
+        public async Task AtualizarNome(Guid Id, string nome)
+        {
+            var feriado = await _dbSet.FindSync(Filter.Eq("_id", Id)).FirstOrDefaultAsync();
 
+            if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
+
+            await base.Atualizar(Id, new Feriado
+            {
+                Id = Id,
+                Data = feriado.Data,
+                Nome = nome,
+                Tipo = feriado.Tipo
+            });
+        }
+        public async Task AtualizarData(Guid Id, string data)
+        {
+            var feriado = await _dbSet.FindSync(Filter.Eq("_id", Id)).FirstOrDefaultAsync();
+
+            if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
+
+            if (string.IsNullOrEmpty(data) && !rxDate.IsMatch(data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
+
+            await base.Atualizar(Id, new Feriado
+            {
+                Id = Id,
+                Data = data,
+                Nome = feriado.Nome,
+                Tipo = feriado.Tipo
+            });
+        }
+        public async Task AtualizarTipo(Guid Id, TipoFeriado tipoFeriado)
+        {
+            var feriado = await _dbSet.FindSync(Filter.Eq("_id", Id)).FirstOrDefaultAsync();
+
+            if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
+
+            await base.Atualizar(Id, new Feriado
+            {
+                Id = Id,
+                Data = feriado.Data,
+                Nome = feriado.Nome,
+                Tipo = tipoFeriado
+            });
+        }
         public override async Task Criar(Feriado entity)
         {
             var feriado = await _dbSet.FindSync(Filter.Eq("Data", entity.Data)).FirstOrDefaultAsync();
