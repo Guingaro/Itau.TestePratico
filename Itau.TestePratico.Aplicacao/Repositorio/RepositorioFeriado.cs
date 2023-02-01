@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -14,10 +15,10 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 {
     public class RepositorioFeriado : RepositorioBase<Feriado>, IRepositorioFeriado
     {
-        Regex rxDate = null;
+       
         public RepositorioFeriado(IMongoDbContext context) : base(context)
         {
-            rxDate = new Regex(@"(0[1-9]|[12][0-9]|3[01])/([01][0-9])/([0-9]{4})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            
         }
 
         public async Task<List<Feriado>> Obter()
@@ -32,7 +33,7 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 
             if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
 
-            if (entity.Data != null && !rxDate.IsMatch(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
+            if (!await ValidacaoData(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
 
             if (await VerificaDuplicidadeData(entity.Data)) throw new Exception("Já existe feriado para data informada.");
 
@@ -60,7 +61,7 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
 
             if (feriado == null) throw new Exception("Id de Feriado Inexistente.");
 
-            if (string.IsNullOrEmpty(data) && !rxDate.IsMatch(data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
+            if (!await ValidacaoData(data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
 
             if (await VerificaDuplicidadeData(data)) throw new Exception("Já existe feriado para data informada.");
 
@@ -90,7 +91,7 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
         {
             if (await VerificaDuplicidadeData(entity.Data)) throw new Exception("Já existe feriado para data informada.");
 
-            if (entity.Data != null && !rxDate.IsMatch(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
+            if (!await ValidacaoData(entity.Data)) throw new Exception($"O Formato esperado para data é dd/mm/aaaa. Ex: {DateTime.UtcNow.ToString("dd/MM/yyyy")}");
 
             await base.Criar(entity);
         }
@@ -104,6 +105,18 @@ namespace Itau.TestePratico.Aplicacao.Repositorio
         }
         async Task<bool> VerificaDuplicidadeData(string data)
                 => await _dbSet.FindSync(Filter.Eq("Data", data)).AnyAsync();
+        async Task<bool> ValidacaoData(string data)
+        {
+            if (!DateTime.TryParse(data, new CultureInfo("pt-BR"), DateTimeStyles.None, out var date))
+                return await Task.FromResult(false);
+
+            Regex rxDate = new Regex(@"(0[1-9]|[12][0-9]|3[01])/([01][0-9])/([0-9]{4})", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            if (!rxDate.IsMatch(data))
+                return await Task.FromResult(false);
+
+            return await Task.FromResult(true);
+
+        }
         private SortDefinition<Feriado> SortDefinition() => Builders<Feriado>.Sort.Descending(x => x.Data);
     }
 }
